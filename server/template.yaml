@@ -1,0 +1,167 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Passkey Authentication API
+
+Globals:
+  Function:
+    Timeout: 30
+    Runtime: nodejs20.x
+    Environment:
+      Variables:
+        RP_ID: !Ref RpId
+        RP_NAME: !Ref RpName
+        ORIGIN: !Ref Origin
+        DDB_TABLE_NAME: !Ref PasskeysTable
+
+Parameters:
+  RpId:
+    Type: String
+    Default: localhost
+    Description: Relying Party ID (domain)
+  RpName:
+    Type: String
+    Default: Passkey Demo
+    Description: Relying Party Name
+  Origin:
+    Type: String
+    Default: http://localhost:5173
+    Description: Frontend origin for CORS
+
+Resources:
+  # DynamoDB Table
+  PasskeysTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${AWS::StackName}-passkeys"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: credentialId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: credentialId
+          KeyType: HASH
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  # API Gateway
+  PasskeyApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      Name: !Sub "${AWS::StackName}-PasskeyApi"
+      CorsConfiguration:
+        AllowOrigins:
+          - !Ref Origin
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+        AllowMethods:
+          - GET
+          - POST
+          - OPTIONS
+        MaxAge: 600
+
+  # Lambda Functions
+  RegistrationOptionsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-RegistrationOptions"
+      CodeUri: .
+      Handler: src/handlers/registrationOptions.handler
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref PasskeyApi
+            Path: /webauthn/registration/options
+            Method: POST
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PasskeysTable
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2022
+        EntryPoints:
+          - src/handlers/registrationOptions.ts
+
+  RegistrationVerifyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-RegistrationVerify"
+      CodeUri: .
+      Handler: src/handlers/registrationVerify.handler
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref PasskeyApi
+            Path: /webauthn/registration/verify
+            Method: POST
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PasskeysTable
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2022
+        EntryPoints:
+          - src/handlers/registrationVerify.ts
+
+  AuthenticationOptionsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-AuthenticationOptions"
+      CodeUri: .
+      Handler: src/handlers/authenticationOptions.handler
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref PasskeyApi
+            Path: /webauthn/authentication/options
+            Method: POST
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PasskeysTable
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2022
+        EntryPoints:
+          - src/handlers/authenticationOptions.ts
+
+  AuthenticationVerifyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-AuthenticationVerify"
+      CodeUri: .
+      Handler: src/handlers/authenticationVerify.handler
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref PasskeyApi
+            Path: /webauthn/authentication/verify
+            Method: POST
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PasskeysTable
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2022
+        EntryPoints:
+          - src/handlers/authenticationVerify.ts
+
+Outputs:
+  PasskeyApiUrl:
+    Description: API Gateway endpoint URL
+    Value: !Sub "https://${PasskeyApi}.execute-api.${AWS::Region}.amazonaws.com"
+
+  DynamoDBTableName:
+    Description: DynamoDB table name
+    Value: !Ref PasskeysTable
