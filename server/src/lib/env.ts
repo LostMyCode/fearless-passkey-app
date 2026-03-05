@@ -7,6 +7,7 @@ export interface ServerConfig {
   jwtPublicKey: string;
   jwtExpiry: number;        // seconds, default 28800 (8h)
   authCodesTable: string;
+  invitesTable: string;
   loginPageTitle: string;
 }
 
@@ -18,6 +19,7 @@ export function getConfig(): ServerConfig {
   const jwtPublicKey = process.env.JWT_PUBLIC_KEY;
   const jwtExpiryRaw = process.env.JWT_EXPIRY;
   const authCodesTable = process.env.AUTH_CODES_TABLE;
+  const invitesTable = process.env.INVITES_TABLE;
   const loginPageTitle = process.env.LOGIN_PAGE_TITLE;
 
   if (!rpId || !rpName || !origin || !ddbTableName) {
@@ -32,6 +34,10 @@ export function getConfig(): ServerConfig {
     throw new Error('Missing required environment variable: AUTH_CODES_TABLE');
   }
 
+  if (!invitesTable) {
+    throw new Error('Missing required environment variable: INVITES_TABLE');
+  }
+
   const jwtExpiry = jwtExpiryRaw ? parseInt(jwtExpiryRaw, 10) : 28800;
 
   return {
@@ -42,6 +48,7 @@ export function getConfig(): ServerConfig {
     jwtPublicKey,
     jwtExpiry,
     authCodesTable,
+    invitesTable,
     loginPageTitle: loginPageTitle || 'Sign In'
   };
 }

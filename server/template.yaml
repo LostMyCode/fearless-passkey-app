@@ -15,6 +15,7 @@ Globals:
         JWT_PUBLIC_KEY: !Ref JwtPublicKey
         JWT_EXPIRY: !Ref JwtExpiry
         AUTH_CODES_TABLE: !Ref CodesTable
+        INVITES_TABLE: !Ref InvitesTable
         LOGIN_PAGE_TITLE: !Ref LoginPageTitle
 
 Parameters:
@@ -60,6 +61,21 @@ Resources:
           KeyType: HASH
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: true
+
+  InvitesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${AWS::StackName}-invites"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: token
+          AttributeType: S
+      KeySchema:
+        - AttributeName: token
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
 
   CodesTable:
     Type: AWS::DynamoDB::Table
@@ -120,6 +136,9 @@ Resources:
             ApiId: !Ref PasskeyApi
             Path: /webauthn/registration/options
             Method: POST
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref InvitesTable
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
@@ -144,6 +163,8 @@ Resources:
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref PasskeysTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref InvitesTable
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
@@ -254,6 +275,47 @@ Resources:
         Target: es2022
         EntryPoints:
           - src/handlers/authPublicKey.ts
+
+  RegisterPageFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-RegisterPage"
+      CodeUri: .
+      Handler: src/handlers/registerPage.handler
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref PasskeyApi
+            Path: /register
+            Method: GET
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref InvitesTable
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2022
+        EntryPoints:
+          - src/handlers/registerPage.ts
+
+  CreateInviteFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-CreateInvite"
+      CodeUri: .
+      Handler: src/handlers/createInvite.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref InvitesTable
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2022
+        EntryPoints:
+          - src/handlers/createInvite.ts
 
   AuthLoginFunction:
     Type: AWS::Serverless::Function

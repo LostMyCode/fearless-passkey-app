@@ -1,9 +1,10 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { generateRegistrationOptions } from '@simplewebauthn/server';
 import { getConfig } from '../lib/env';
-import { successResponse, handleError } from '../lib/responses';
+import { successResponse, errorResponse, handleError } from '../lib/responses';
 import { handleOptions } from '../lib/cors';
-import { RegistrationOptionsResponse } from '../types';
+import { validateInviteToken } from '../lib/invite';
+import { RegistrationOptionsRequest, RegistrationOptionsResponse } from '../types';
 
 /**
  * Generate WebAuthn registration options
@@ -20,6 +21,16 @@ export async function handler(
 
   try {
     const config = getConfig();
+
+    const body: RegistrationOptionsRequest = event.body ? JSON.parse(event.body) : {};
+    if (!body.token) {
+      return errorResponse('MISSING_TOKEN', 'Invite token is required');
+    }
+
+    const valid = await validateInviteToken(body.token);
+    if (!valid) {
+      return errorResponse('INVALID_TOKEN', 'Invite token is invalid or has already been used');
+    }
 
     console.log(JSON.stringify({
       action: 'registration_options_requested',

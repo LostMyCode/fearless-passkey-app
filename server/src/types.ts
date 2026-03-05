@@ -6,13 +6,16 @@ import {
 } from '@simplewebauthn/server';
 
 // Request/Response types for API endpoints
-export interface RegistrationOptionsRequest {}
+export interface RegistrationOptionsRequest {
+  token: string;
+}
 
 export interface RegistrationOptionsResponse extends PublicKeyCredentialCreationOptionsJSON {}
 
 export interface RegistrationVerifyRequest {
   attestation: RegistrationResponseJSON;
   challenge: string;
+  token: string;
 }
 
 export interface RegistrationVerifyResponse {

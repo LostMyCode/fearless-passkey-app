@@ -5,6 +5,7 @@ import { successResponse, errorResponse, handleError } from '../lib/responses';
 import { handleOptions } from '../lib/cors';
 import { putCredential } from '../lib/ddb';
 import { createCredential } from '../lib/models';
+import { consumeInviteToken } from '../lib/invite';
 import { RegistrationVerifyRequest, RegistrationVerifyResponse } from '../types';
 
 /**
@@ -31,6 +32,15 @@ export async function handler(
 
     if (!requestData.attestation) {
       return errorResponse('MISSING_ATTESTATION', 'Attestation response is required');
+    }
+
+    if (!requestData.token) {
+      return errorResponse('MISSING_TOKEN', 'Invite token is required');
+    }
+
+    const consumed = await consumeInviteToken(requestData.token);
+    if (!consumed) {
+      return errorResponse('INVALID_TOKEN', 'Invite token is invalid or has already been used');
     }
 
     console.log(JSON.stringify({
