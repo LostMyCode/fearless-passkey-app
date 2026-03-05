@@ -12,7 +12,6 @@ Globals:
         RP_NAME: !Ref RpName
         ORIGIN: !Ref Origin
         DDB_TABLE_NAME: !Ref PasskeysTable
-        JWT_PRIVATE_KEY: !Ref JwtPrivateKey
         JWT_PUBLIC_KEY: !Ref JwtPublicKey
         JWT_EXPIRY: !Ref JwtExpiry
         AUTH_CODES_TABLE: !Ref CodesTable
@@ -31,10 +30,9 @@ Parameters:
     Type: String
     Default: http://localhost:5173
     Description: Frontend origin for CORS
-  JwtPrivateKey:
+  JwtPrivateKeyParam:
     Type: String
-    NoEcho: true
-    Description: RS256 private key PEM for signing JWTs
+    Description: SSM Parameter Store path for the RS256 private key (e.g. /fearless/jwt-private-key)
   JwtPublicKey:
     Type: String
     Description: RS256 public key PEM for verifying JWTs
@@ -210,6 +208,9 @@ Resources:
       FunctionName: !Sub "${AWS::StackName}-AuthExchange"
       CodeUri: .
       Handler: src/handlers/authExchange.handler
+      Environment:
+        Variables:
+          JWT_PRIVATE_KEY_PARAM: !Ref JwtPrivateKeyParam
       Events:
         Api:
           Type: HttpApi
@@ -220,6 +221,11 @@ Resources:
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref CodesTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+              Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${JwtPrivateKeyParam}"
     Metadata:
       BuildMethod: esbuild
       BuildProperties:

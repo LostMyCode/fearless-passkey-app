@@ -4,7 +4,6 @@ export interface ServerConfig {
   rpName: string;
   origin: string;
   ddbTableName: string;
-  jwtPrivateKey: string;
   jwtPublicKey: string;
   jwtExpiry: number;        // seconds, default 28800 (8h)
   authCodesTable: string;
@@ -16,7 +15,6 @@ export function getConfig(): ServerConfig {
   const rpName = process.env.RP_NAME;
   const origin = process.env.ORIGIN;
   const ddbTableName = process.env.DDB_TABLE_NAME;
-  const jwtPrivateKey = process.env.JWT_PRIVATE_KEY;
   const jwtPublicKey = process.env.JWT_PUBLIC_KEY;
   const jwtExpiryRaw = process.env.JWT_EXPIRY;
   const authCodesTable = process.env.AUTH_CODES_TABLE;
@@ -26,8 +24,8 @@ export function getConfig(): ServerConfig {
     throw new Error('Missing required environment variables: RP_ID, RP_NAME, ORIGIN, DDB_TABLE_NAME');
   }
 
-  if (!jwtPrivateKey || !jwtPublicKey) {
-    throw new Error('Missing required environment variables: JWT_PRIVATE_KEY, JWT_PUBLIC_KEY');
+  if (!jwtPublicKey) {
+    throw new Error('Missing required environment variable: JWT_PUBLIC_KEY');
   }
 
   if (!authCodesTable) {
@@ -41,7 +39,6 @@ export function getConfig(): ServerConfig {
     rpName,
     origin,
     ddbTableName,
-    jwtPrivateKey,
     jwtPublicKey,
     jwtExpiry,
     authCodesTable,

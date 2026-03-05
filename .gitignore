@@ -27,7 +27,11 @@ pids/
 
 # AWS SAM
 .aws-sam/
+samconfig.toml
 server/env.json
+
+# Keys (never commit private keys)
+server/keys/
 
 # OS generated files
 .DS_Store

@@ -4,6 +4,7 @@ import { successResponse, errorResponse, handleError } from '../lib/responses';
 import { handleOptions } from '../lib/cors';
 import { consumeAuthCode } from '../lib/authCode';
 import { signJWT } from '../lib/jwt';
+import { getPrivateKey } from '../lib/ssm';
 import { AuthExchangeRequest, AuthExchangeResponse } from '../types';
 
 /**
@@ -46,7 +47,8 @@ export async function handler(
       exp: now + config.jwtExpiry
     };
 
-    const token = signJWT(payload, config.jwtPrivateKey);
+    const privateKey = await getPrivateKey();
+    const token = signJWT(payload, privateKey);
 
     console.log(JSON.stringify({
       action: 'jwt_issued',
