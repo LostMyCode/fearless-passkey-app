@@ -19,7 +19,7 @@ export async function handler(
       statusCode: 200,
       headers: {
         'Content-Type': 'application/x-pem-file',
-        'Access-Control-Allow-Origin': '*',
+        // CORS (*) is managed by PublicApi's CorsConfiguration in template.yaml
         'Cache-Control': 'public, max-age=86400' // public key rarely changes
       },
       body: config.jwtPublicKey

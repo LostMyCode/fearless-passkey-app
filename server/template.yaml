@@ -95,6 +95,19 @@ Resources:
           - OPTIONS
         MaxAge: 600
 
+  # Separate API for public endpoints that need CORS open to all origins
+  PublicApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      Name: !Sub "${AWS::StackName}-PublicApi"
+      CorsConfiguration:
+        AllowOrigins:
+          - '*'
+        AllowMethods:
+          - GET
+          - OPTIONS
+        MaxAge: 86400
+
   # Lambda Functions
   RegistrationOptionsFunction:
     Type: AWS::Serverless::Function
@@ -109,9 +122,6 @@ Resources:
             ApiId: !Ref PasskeyApi
             Path: /webauthn/registration/options
             Method: POST
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref PasskeysTable
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
@@ -228,7 +238,7 @@ Resources:
         Api:
           Type: HttpApi
           Properties:
-            ApiId: !Ref PasskeyApi
+            ApiId: !Ref PublicApi
             Path: /auth/public-key
             Method: GET
     Metadata:
@@ -264,6 +274,10 @@ Outputs:
   PasskeyApiUrl:
     Description: API Gateway endpoint URL
     Value: !Sub "https://${PasskeyApi}.execute-api.${AWS::Region}.amazonaws.com"
+
+  PublicApiUrl:
+    Description: Public API endpoint URL (CORS open, for /auth/public-key)
+    Value: !Sub "https://${PublicApi}.execute-api.${AWS::Region}.amazonaws.com"
 
   DynamoDBTableName:
     Description: DynamoDB table name
