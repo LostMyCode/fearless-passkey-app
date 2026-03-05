@@ -35,6 +35,15 @@ export interface AuthenticationVerifyResponse {
   ok: true;
   credentialId: string;
   newCounter: number;
+  code: string;
+}
+
+export interface AuthExchangeRequest {
+  code: string;
+}
+
+export interface AuthExchangeResponse {
+  token: string;
 }
 
 // DynamoDB model

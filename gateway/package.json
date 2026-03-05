@@ -1,0 +1,25 @@
+{
+  "name": "@passkey-gateway/core",
+  "version": "1.0.0",
+  "description": "Platform-agnostic auth middleware primitives for the passkey gateway",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc",
+    "type-check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": ["passkey", "webauthn", "auth", "middleware", "jwt"],
+  "license": "MIT"
+}

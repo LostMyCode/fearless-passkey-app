@@ -3,7 +3,7 @@ import { generateRegistrationOptions } from '@simplewebauthn/server';
 import { getConfig } from '../lib/env';
 import { successResponse, handleError } from '../lib/responses';
 import { handleOptions } from '../lib/cors';
-import { RegistrationOptionsRequest, RegistrationOptionsResponse } from '../types';
+import { RegistrationOptionsResponse } from '../types';
 
 /**
  * Generate WebAuthn registration options
@@ -20,12 +20,6 @@ export async function handler(
 
   try {
     const config = getConfig();
-
-    // Parse request (currently empty but typed for future extensibility)
-    let requestData: RegistrationOptionsRequest = {};
-    if (event.body) {
-      requestData = JSON.parse(event.body);
-    }
 
     console.log(JSON.stringify({
       action: 'registration_options_requested',

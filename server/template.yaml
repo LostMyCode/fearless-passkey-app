@@ -12,6 +12,11 @@ Globals:
         RP_NAME: !Ref RpName
         ORIGIN: !Ref Origin
         DDB_TABLE_NAME: !Ref PasskeysTable
+        JWT_PRIVATE_KEY: !Ref JwtPrivateKey
+        JWT_PUBLIC_KEY: !Ref JwtPublicKey
+        JWT_EXPIRY: !Ref JwtExpiry
+        AUTH_CODES_TABLE: !Ref CodesTable
+        LOGIN_PAGE_TITLE: !Ref LoginPageTitle
 
 Parameters:
   RpId:
@@ -26,9 +31,24 @@ Parameters:
     Type: String
     Default: http://localhost:5173
     Description: Frontend origin for CORS
+  JwtPrivateKey:
+    Type: String
+    NoEcho: true
+    Description: RS256 private key PEM for signing JWTs
+  JwtPublicKey:
+    Type: String
+    Description: RS256 public key PEM for verifying JWTs
+  JwtExpiry:
+    Type: Number
+    Default: 28800
+    Description: JWT expiry in seconds (default 8 hours)
+  LoginPageTitle:
+    Type: String
+    Default: Sign In
+    Description: Title displayed on the login page
 
 Resources:
-  # DynamoDB Table
+  # DynamoDB Tables
   PasskeysTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -42,6 +62,21 @@ Resources:
           KeyType: HASH
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: true
+
+  CodesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${AWS::StackName}-codes"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: code
+          AttributeType: S
+      KeySchema:
+        - AttributeName: code
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
 
   # API Gateway
   PasskeyApi:
@@ -149,6 +184,8 @@ Resources:
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref PasskeysTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CodesTable
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
@@ -156,6 +193,72 @@ Resources:
         Target: es2022
         EntryPoints:
           - src/handlers/authenticationVerify.ts
+
+  AuthExchangeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-AuthExchange"
+      CodeUri: .
+      Handler: src/handlers/authExchange.handler
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref PasskeyApi
+            Path: /auth/exchange
+            Method: POST
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CodesTable
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2022
+        EntryPoints:
+          - src/handlers/authExchange.ts
+
+  AuthPublicKeyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-AuthPublicKey"
+      CodeUri: .
+      Handler: src/handlers/authPublicKey.handler
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref PasskeyApi
+            Path: /auth/public-key
+            Method: GET
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2022
+        EntryPoints:
+          - src/handlers/authPublicKey.ts
+
+  AuthLoginFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-AuthLogin"
+      CodeUri: .
+      Handler: src/handlers/authLogin.handler
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref PasskeyApi
+            Path: /auth/login
+            Method: GET
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2022
+        EntryPoints:
+          - src/handlers/authLogin.ts
 
 Outputs:
   PasskeyApiUrl:
@@ -165,3 +268,7 @@ Outputs:
   DynamoDBTableName:
     Description: DynamoDB table name
     Value: !Ref PasskeysTable
+
+  CodesTableName:
+    Description: DynamoDB codes table name
+    Value: !Ref CodesTable

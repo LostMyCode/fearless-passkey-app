@@ -4,6 +4,7 @@ import { getConfig } from '../lib/env';
 import { successResponse, errorResponse, handleError } from '../lib/responses';
 import { handleOptions } from '../lib/cors';
 import { getCredential, updateCredentialCounter } from '../lib/ddb';
+import { generateAuthCode } from '../lib/authCode';
 import { AuthenticationVerifyRequest, AuthenticationVerifyResponse } from '../types';
 
 /**
@@ -108,10 +109,13 @@ export async function handler(
       await updateCredentialCounter(credentialId, newCounter, credential.counter);
     }
 
+    const code = await generateAuthCode(credentialId);
+
     const response: AuthenticationVerifyResponse = {
       ok: true,
       credentialId,
-      newCounter
+      newCounter,
+      code
     };
 
     console.log(JSON.stringify({

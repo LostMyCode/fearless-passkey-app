@@ -27,6 +27,7 @@ pids/
 
 # AWS SAM
 .aws-sam/
+server/env.json
 
 # OS generated files
 .DS_Store
