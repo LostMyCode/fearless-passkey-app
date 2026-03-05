@@ -17,7 +17,7 @@ interface CreateInviteResult {
  *
  * Usage:
  *   aws lambda invoke \
- *     --function-name fearless-passkey-app-CreateInvite \
+ *     --function-name <stack-name>-CreateInvite \
  *     --payload '{"expiresInHours": 24}' \
  *     response.json && cat response.json
  */

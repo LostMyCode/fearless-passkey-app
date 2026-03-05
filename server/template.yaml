@@ -33,7 +33,7 @@ Parameters:
     Description: Frontend origin for CORS
   JwtPrivateKeyParam:
     Type: String
-    Description: SSM Parameter Store path for the RS256 private key (e.g. /fearless/jwt-private-key)
+    Description: SSM Parameter Store path for the RS256 private key (e.g. /myapp/jwt-private-key)
   JwtPublicKey:
     Type: String
     Description: RS256 public key PEM for verifying JWTs
