@@ -1,5 +1,5 @@
 {
-  "name": "@passkey-gateway/core",
+  "name": "@fearless-sdk/gateway",
   "version": "1.0.0",
   "description": "Platform-agnostic auth middleware primitives for the passkey gateway",
   "type": "module",
@@ -21,5 +21,13 @@
     "node": ">=18"
   },
   "keywords": ["passkey", "webauthn", "auth", "middleware", "jwt"],
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LostMyCode/fearless-passkey-app.git",
+    "directory": "gateway"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
 }

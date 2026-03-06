@@ -1,5 +1,5 @@
 /**
- * @passkey-gateway/core
+ * @fearless-sdk/gateway
  *
  * Platform-agnostic primitives for integrating with the passkey authentication
  * gateway. Import these helpers into any JavaScript/TypeScript runtime that

@@ -1,4 +1,4 @@
-# @passkey-gateway/core
+# @fearless-sdk/gateway
 
 Platform-agnostic primitives for the passkey authentication gateway.
 
