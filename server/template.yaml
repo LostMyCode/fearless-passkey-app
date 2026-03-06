@@ -17,6 +17,8 @@ Globals:
         AUTH_CODES_TABLE: !Ref CodesTable
         INVITES_TABLE: !Ref InvitesTable
         LOGIN_PAGE_TITLE: !Ref LoginPageTitle
+        FEDERATED_ACCOUNTS_TABLE: !Ref FederatedAccountsTable
+        GOOGLE_CLIENT_ID: !Ref GoogleClientId
 
 Parameters:
   RpId:
@@ -45,6 +47,10 @@ Parameters:
     Type: String
     Default: Sign In
     Description: Title displayed on the login page
+  GoogleClientId:
+    Type: String
+    Default: ''
+    Description: Google OAuth 2.0 Client ID for federated login (leave empty to disable)
 
 Resources:
   # DynamoDB Tables
@@ -91,6 +97,20 @@ Resources:
       TimeToLiveSpecification:
         AttributeName: expiresAt
         Enabled: true
+
+  FederatedAccountsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${AWS::StackName}-federated-accounts"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: providerSubject
+          AttributeType: S
+      KeySchema:
+        - AttributeName: providerSubject
+          KeyType: HASH
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
 
   # API Gateway
   PasskeyApi:
@@ -338,6 +358,49 @@ Resources:
         EntryPoints:
           - src/handlers/authLogin.ts
 
+  GoogleVerifyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-GoogleVerify"
+      CodeUri: .
+      Handler: src/handlers/googleVerify.handler
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref PasskeyApi
+            Path: /auth/google/verify
+            Method: POST
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref FederatedAccountsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CodesTable
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2022
+        EntryPoints:
+          - src/handlers/googleVerify.ts
+
+  AddFederatedAccountFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-AddFederatedAccount"
+      CodeUri: .
+      Handler: src/handlers/addFederatedAccount.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref FederatedAccountsTable
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2022
+        EntryPoints:
+          - src/handlers/addFederatedAccount.ts
+
 Outputs:
   PasskeyApiUrl:
     Description: API Gateway endpoint URL
@@ -354,3 +417,7 @@ Outputs:
   CodesTableName:
     Description: DynamoDB codes table name
     Value: !Ref CodesTable
+
+  FederatedAccountsTableName:
+    Description: DynamoDB federated accounts table name
+    Value: !Ref FederatedAccountsTable

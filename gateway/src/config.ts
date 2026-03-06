@@ -1,9 +1,10 @@
-import type { GatewayConfig, ResolvedGatewayConfig } from './types.js';
+import type { FederatedProvider, GatewayConfig, ResolvedGatewayConfig } from './types.js';
 
 const DEFAULTS = {
   callbackPath: '/__auth/cb',
   cookieName: 'psk_token',
   cookieMaxAge: 28800, // 8 hours
+  federatedProviders: [] as FederatedProvider[],
 } as const;
 
 /**
@@ -48,9 +49,13 @@ export function buildLoginUrl(
   passkeyApiBase: string,
   callbackUrl: string,
   destination: string,
+  federatedProviders?: string[],
 ): string {
   const url = new URL(`${passkeyApiBase}/auth/login`);
   url.searchParams.set('redirect', callbackUrl);
   url.searchParams.set('destination', destination);
+  if (federatedProviders && federatedProviders.length > 0) {
+    url.searchParams.set('providers', federatedProviders.join(','));
+  }
   return url.toString();
 }

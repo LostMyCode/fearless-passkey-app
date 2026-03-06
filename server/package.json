@@ -12,6 +12,7 @@
     "@aws-sdk/client-dynamodb": "^3.450.0",
     "@aws-sdk/client-ssm": "^3.1002.0",
     "@aws-sdk/lib-dynamodb": "^3.450.0",
+    "google-auth-library": "^9.14.0",
     "@simplewebauthn/server": "^13.1.2",
     "uuid": "^9.0.1"
   },

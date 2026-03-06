@@ -38,7 +38,20 @@ export interface GatewayConfig {
    * Default: 28800 (8 hours)
    */
   cookieMaxAge?: number;
+
+  /**
+   * Federated identity providers allowed for this gateway instance.
+   * When set, the login page will show these providers as alternative sign-in options.
+   * The passkey option is always available regardless of this setting.
+   * @example ['google']
+   */
+  federatedProviders?: FederatedProvider[];
 }
+
+/**
+ * Supported federated identity providers.
+ */
+export type FederatedProvider = 'google';
 
 /**
  * Resolved config with all optional fields filled in with defaults.

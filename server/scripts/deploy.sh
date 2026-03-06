@@ -8,6 +8,7 @@ RP_ID="example.com"
 RP_NAME="My App"
 ORIGIN="https://example.com"
 SSM_PARAM_NAME="/myapp/jwt-private-key"
+GOOGLE_CLIENT_ID=""  # Google OAuth 2.0 Client ID (leave empty to disable Google login)
 # ──────────────────────────────────────────────────────────────────────────────
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -64,7 +65,8 @@ sam deploy \
     "RpName=$RP_NAME" \
     "Origin=$ORIGIN" \
     "JwtPrivateKeyParam=$SSM_PARAM_NAME" \
-    "JwtPublicKey=$(cat "$PUBLIC_KEY")"
+    "JwtPublicKey=$(cat "$PUBLIC_KEY")" \
+    "GoogleClientId=$GOOGLE_CLIENT_ID"
 
 echo ""
 echo "Deploy complete."

@@ -9,6 +9,8 @@ export interface ServerConfig {
   authCodesTable: string;
   invitesTable: string;
   loginPageTitle: string;
+  federatedAccountsTable: string;
+  googleClientId: string;
 }
 
 export function getConfig(): ServerConfig {
@@ -40,6 +42,9 @@ export function getConfig(): ServerConfig {
 
   const jwtExpiry = jwtExpiryRaw ? parseInt(jwtExpiryRaw, 10) : 28800;
 
+  const federatedAccountsTable = process.env.FEDERATED_ACCOUNTS_TABLE || '';
+  const googleClientId = process.env.GOOGLE_CLIENT_ID || '';
+
   return {
     rpId,
     rpName,
@@ -49,6 +54,8 @@ export function getConfig(): ServerConfig {
     jwtExpiry,
     authCodesTable,
     invitesTable,
-    loginPageTitle: loginPageTitle || 'Sign In'
+    loginPageTitle: loginPageTitle || 'Sign In',
+    federatedAccountsTable,
+    googleClientId,
   };
 }

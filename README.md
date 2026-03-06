@@ -36,7 +36,7 @@ Invite-gated passkey (WebAuthn) registration and authentication built with AWS S
 ## Deployment
 
 1. Generate keys: `bash server/scripts/generate-keys.sh`
-2. Edit `server/scripts/deploy.sh` to set your stack name, region, domain, and SSM path
+2. Edit `server/scripts/deploy.sh` to set your stack name, region, domain, SSM path, and optionally `GOOGLE_CLIENT_ID`
 3. Deploy: `bash server/scripts/deploy.sh`
 
 ## Invite Flow
@@ -50,6 +50,44 @@ aws lambda invoke \
   response.json && cat response.json
 ```
 
+## Google Federated Login
+
+Google login is available as a fallback for devices that don't support passkeys. It is **not enabled by default** — it requires both server-side and gateway-side configuration.
+
+### 1. Server setup
+
+Set `GOOGLE_CLIENT_ID` in `deploy.sh` with your Google OAuth 2.0 Client ID and deploy. No client secret is needed — the server verifies Google ID tokens directly.
+
+### 2. Allow Google accounts
+
+Only pre-approved accounts can log in. Register them via CLI:
+
+```bash
+aws lambda invoke \
+  --function-name <stack-name>-AddFederatedAccount \
+  --payload '{"provider": "google", "email": "user@example.com"}' \
+  response.json && cat response.json
+```
+
+### 3. Gateway setup
+
+Add `federatedProviders: ['google']` to your gateway config. This causes the login page to show the Google sign-in button alongside the passkey option.
+
+```typescript
+const cfg = resolveConfig({
+  passkeyApiBase: env.PASSKEY_API_BASE,
+  publicKey: env.PASSKEY_PUBLIC_KEY,
+  protectedPaths: ['/admin'],
+  federatedProviders: ['google'],
+});
+```
+
+Then pass `cfg.federatedProviders` when building the login URL:
+
+```typescript
+buildLoginUrl(cfg.passkeyApiBase, callbackUrl, pathname, cfg.federatedProviders);
+```
+
 ## Gateway
 
 The `gateway/` package protects routes by validating JWT cookies and redirecting unauthenticated users to `/auth/login`. See [gateway/README.md](gateway/README.md) for integration recipes.
@@ -59,3 +97,4 @@ The `gateway/` package protects routes by validating JWT cookies and redirecting
 - HTTPS required in production for WebAuthn
 - Private key is stored in SSM Parameter Store (SecureString)
 - Invite tokens and auth codes are single-use with TTL
+- Google federated login requires accounts to be pre-approved in the FederatedAccounts table

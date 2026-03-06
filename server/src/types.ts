@@ -49,6 +49,16 @@ export interface AuthExchangeResponse {
   token: string;
 }
 
+// Google federated login
+export interface GoogleVerifyRequest {
+  idToken: string;
+}
+
+export interface GoogleVerifyResponse {
+  ok: true;
+  code: string;
+}
+
 // DynamoDB model
 export interface PasskeyCredential {
   credentialId: string;      // Primary key - base64url encoded

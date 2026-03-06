@@ -355,6 +355,7 @@ Fill in defaults for optional fields. Call once at module load time.
 | `callbackPath` | no | `/__auth/cb` | Auth callback path |
 | `cookieName` | no | `psk_token` | JWT cookie name |
 | `cookieMaxAge` | no | `28800` | Cookie lifetime (seconds) |
+| `federatedProviders` | no | `[]` | Federated providers to show on login (e.g. `['google']`) |
 
 ### `verifyJWT(token, publicKeyPem): Promise<JWTPayload | null>`
 
@@ -380,9 +381,9 @@ Build a `Set-Cookie` that immediately expires the cookie (sign-out).
 
 Return `true` if `pathname` starts with any entry in `protectedPaths`.
 
-### `buildLoginUrl(passkeyApiBase, callbackUrl, destination): string`
+### `buildLoginUrl(passkeyApiBase, callbackUrl, destination, federatedProviders?): string`
 
-Build the full URL to the AWS-hosted login page, with `redirect` and `destination` query params encoded.
+Build the full URL to the AWS-hosted login page, with `redirect` and `destination` query params encoded. Pass `federatedProviders` (e.g. `['google']`) to show federated login options on the login page.
 
 ---
 

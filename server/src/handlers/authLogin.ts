@@ -4,15 +4,22 @@ import { handleError } from '../lib/responses';
 
 /**
  * Serve the login HTML page
- * GET /auth/login?redirect=<callback_url>&destination=<path>
+ * GET /auth/login?redirect=<callback_url>&destination=<path>&providers=<comma-separated>
  */
 export async function handler(
-  _event: APIGatewayProxyEvent
+  event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> {
 
   try {
     const config = getConfig();
     const title = config.loginPageTitle;
+
+    // Parse allowed federated providers from query string
+    const queryParams = event.queryStringParameters || {};
+    const providersParam = queryParams.providers || '';
+    const allowedProviders = providersParam ? providersParam.split(',').map(p => p.trim()) : [];
+    const showGoogle = allowedProviders.includes('google') && !!config.googleClientId;
+    const googleClientId = config.googleClientId;
 
     const html = `<!DOCTYPE html>
 <html lang="en">
@@ -83,6 +90,23 @@ export async function handler(
     .status.loading { color: #6e6e73; }
     .status.success { color: #28a745; }
     .status.error { color: #d93025; }
+    .divider {
+      display: flex;
+      align-items: center;
+      margin: 24px 0;
+      gap: 12px;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #d2d2d7;
+    }
+    .divider span {
+      font-size: 13px;
+      color: #86868b;
+      font-weight: 500;
+    }
     .spinner {
       display: inline-block;
       width: 16px;
@@ -99,13 +123,18 @@ export async function handler(
   <div class="card">
     <span class="icon">&#x1F511;</span>
     <h1>${escapeHtml(title)}</h1>
-    <p class="subtitle">Sign in with your passkey</p>
+    <p class="subtitle">${showGoogle ? 'Choose a sign-in method' : 'Sign in with your passkey'}</p>
     <button class="btn btn-primary" id="signInBtn" onclick="startLogin()">
       Sign in with Passkey
     </button>
+    ${showGoogle ? `
+    <div class="divider"><span>or</span></div>
+    <div id="googleBtnContainer" style="display:flex;justify-content:center;"></div>
+    ` : ''}
     <div class="status" id="statusMsg"></div>
   </div>
 
+  ${showGoogle ? `<script src="https://accounts.google.com/gsi/client"></script>` : ''}
   <script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
   <script>
     (function() {
@@ -198,6 +227,65 @@ export async function handler(
           setLoading(false);
         }
       };
+      ${showGoogle ? `
+      // Initialize Google Identity Services and render the standard button
+      google.accounts.id.initialize({
+        client_id: '${escapeHtml(googleClientId)}',
+        callback: handleGoogleResponse,
+        auto_select: false,
+      });
+
+      google.accounts.id.renderButton(
+        document.getElementById('googleBtnContainer'),
+        {
+          type: 'standard',
+          theme: 'outline',
+          size: 'large',
+          width: 320,
+          text: 'signin_with',
+        }
+      );
+
+      async function handleGoogleResponse(response) {
+        try {
+          setStatus('Verifying\\u2026', 'loading');
+
+          var verifyRes = await fetch('/auth/google/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idToken: response.credential })
+          });
+
+          if (!verifyRes.ok) {
+            var errData = await verifyRes.json().catch(function() { return {}; });
+            var errMsg = (errData.error && errData.error.message) || 'Google verification failed';
+            throw new Error(errMsg);
+          }
+
+          var verifyData = await verifyRes.json();
+
+          if (!verifyData.ok || !verifyData.code) {
+            throw new Error('Verification did not return a valid code');
+          }
+
+          setStatus('Success! Redirecting\\u2026', 'success');
+
+          if (redirect) {
+            var dest = redirect + '?code=' + encodeURIComponent(verifyData.code);
+            if (destination) {
+              dest += '&destination=' + encodeURIComponent(destination);
+            }
+            window.location.href = dest;
+          } else {
+            setStatus('Signed in. Code: ' + verifyData.code, 'success');
+          }
+        } catch (err) {
+          console.error(err);
+          var msg = (err && err.message) ? err.message : 'An error occurred';
+          setStatus(msg, 'error');
+        }
+      }
+      ` : ''}
     })();
   </script>
 </body>

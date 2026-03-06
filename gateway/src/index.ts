@@ -9,7 +9,7 @@
  * See README.md for complete integration recipes per platform.
  */
 
-export type { GatewayConfig, ResolvedGatewayConfig, JWTPayload } from './types.js';
+export type { GatewayConfig, ResolvedGatewayConfig, JWTPayload, FederatedProvider } from './types.js';
 
 export { verifyJWT } from './jwt.js';
 export { exchangeCode } from './exchange.js';
