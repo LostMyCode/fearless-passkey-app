@@ -43,9 +43,18 @@ export interface GatewayConfig {
    * Federated identity providers allowed for this gateway instance.
    * When set, the login page will show these providers as alternative sign-in options.
    * The passkey option is always available regardless of this setting.
+   * Requires `providersSecret` to be set for server-side enforcement.
    * @example ['google']
    */
   federatedProviders?: FederatedProvider[];
+
+  /**
+   * Shared HMAC secret used to sign the `providers` query parameter.
+   * Must match the `PROVIDERS_SECRET` env var configured on the passkey server.
+   * Required when `federatedProviders` is non-empty — prevents users from
+   * enabling providers by tampering with query parameters.
+   */
+  providersSecret?: string;
 }
 
 /**

@@ -5,6 +5,7 @@ import { successResponse, errorResponse, handleError } from '../lib/responses';
 import { handleOptions } from '../lib/cors';
 import { getFederatedAccount } from '../lib/federatedAccount';
 import { generateAuthCode } from '../lib/authCode';
+import { verifyProvidersSig } from '../lib/providers';
 
 /**
  * Verify a Google ID token and issue a one-time auth code.
@@ -22,18 +23,6 @@ export async function handler(
 
   try {
     const config = getConfig();
-
-    // Enforce server-side provider restriction.
-    // Even if GOOGLE_CLIENT_ID is configured, reject requests
-    // unless 'google' is explicitly listed in ALLOWED_PROVIDERS.
-    if (!config.allowedProviders.includes('google')) {
-      console.log(JSON.stringify({
-        action: 'google_verify_denied',
-        reason: 'provider_not_allowed',
-      }));
-      return errorResponse('PROVIDER_NOT_ALLOWED', 'Google login is not allowed', 403);
-    }
-
     const googleClientId = config.googleClientId;
 
     if (!googleClientId) {
@@ -44,7 +33,31 @@ export async function handler(
       return errorResponse('MISSING_BODY', 'Request body is required');
     }
 
-    const { idToken } = JSON.parse(event.body) as { idToken?: string };
+    const body = JSON.parse(event.body) as {
+      idToken?: string;
+      providers?: string;
+      providersSig?: string;
+      redirect?: string;
+    };
+
+    // Verify HMAC signature to ensure the gateway actually authorised Google login.
+    // Without a valid signature, reject the request even if GOOGLE_CLIENT_ID is set.
+    const verifiedProviders = verifyProvidersSig(
+      body.providers || '',
+      body.redirect || '',
+      body.providersSig || '',
+      config.providersSecret,
+    );
+
+    if (!verifiedProviders.includes('google')) {
+      console.log(JSON.stringify({
+        action: 'google_verify_denied',
+        reason: 'provider_not_allowed',
+      }));
+      return errorResponse('PROVIDER_NOT_ALLOWED', 'Google login is not allowed', 403);
+    }
+
+    const { idToken } = body;
 
     if (!idToken) {
       return errorResponse('MISSING_ID_TOKEN', 'Google ID token is required');

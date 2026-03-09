@@ -1,23 +1,36 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { getConfig } from '../lib/env';
 import { handleError } from '../lib/responses';
+import { verifyProvidersSig } from '../lib/providers';
 
 /**
  * Serve the login HTML page
- * GET /auth/login?redirect=<callback_url>&destination=<path>&providers=<comma-separated>
+ * GET /auth/login?redirect=<callback_url>&destination=<path>&providers=<csv>&providers_sig=<hmac>
  */
 export async function handler(
-  _event: APIGatewayProxyEvent
+  event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> {
 
   try {
     const config = getConfig();
     const title = config.loginPageTitle;
 
-    // Determine allowed providers from server-side config (not query params)
-    // The ALLOWED_PROVIDERS env var is the source of truth to prevent
-    // users from bypassing gateway restrictions via query parameter tampering.
-    const showGoogle = config.allowedProviders.includes('google') && !!config.googleClientId;
+    // Verify HMAC signature on the providers query parameter.
+    // The gateway signs providers + redirect with a shared secret so that
+    // users cannot enable providers by tampering with the URL.
+    const queryParams = event.queryStringParameters || {};
+    const providersParam = queryParams.providers || '';
+    const providersSig = queryParams.providers_sig || '';
+    const redirect = queryParams.redirect || '';
+
+    const verifiedProviders = verifyProvidersSig(
+      providersParam,
+      redirect,
+      providersSig,
+      config.providersSecret,
+    );
+
+    const showGoogle = verifiedProviders.includes('google') && !!config.googleClientId;
     const googleClientId = config.googleClientId;
 
     const html = `<!DOCTYPE html>
@@ -252,7 +265,12 @@ export async function handler(
           var verifyRes = await fetch('/auth/google/verify', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ idToken: response.credential })
+            body: JSON.stringify({
+              idToken: response.credential,
+              providers: params.get('providers') || '',
+              providersSig: params.get('providers_sig') || '',
+              redirect: redirect
+            })
           });
 
           if (!verifyRes.ok) {

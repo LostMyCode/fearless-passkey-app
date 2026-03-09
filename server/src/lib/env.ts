@@ -11,7 +11,7 @@ export interface ServerConfig {
   loginPageTitle: string;
   federatedAccountsTable: string;
   googleClientId: string;
-  allowedProviders: string[];
+  providersSecret: string;
 }
 
 export function getConfig(): ServerConfig {
@@ -45,10 +45,7 @@ export function getConfig(): ServerConfig {
 
   const federatedAccountsTable = process.env.FEDERATED_ACCOUNTS_TABLE || '';
   const googleClientId = process.env.GOOGLE_CLIENT_ID || '';
-  const allowedProvidersRaw = process.env.ALLOWED_PROVIDERS || '';
-  const allowedProviders = allowedProvidersRaw
-    ? allowedProvidersRaw.split(',').map(p => p.trim()).filter(Boolean)
-    : [];
+  const providersSecret = process.env.PROVIDERS_SECRET || '';
 
   return {
     rpId,
@@ -62,6 +59,6 @@ export function getConfig(): ServerConfig {
     loginPageTitle: loginPageTitle || 'Sign In',
     federatedAccountsTable,
     googleClientId,
-    allowedProviders,
+    providersSecret,
   };
 }
