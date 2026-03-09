@@ -78,6 +78,7 @@ export async function buildLoginUrl(
 
 /**
  * Compute HMAC-SHA256 using the Web Crypto API (works in Workers, Node ≥ 18, Deno, Bun).
+ * Returns the signature as a base64url string (no padding) for URL-friendliness.
  */
 async function hmacSign(data: string, secret: string): Promise<string> {
   const enc = new TextEncoder();
@@ -89,7 +90,9 @@ async function hmacSign(data: string, secret: string): Promise<string> {
     ['sign'],
   );
   const sig = await crypto.subtle.sign('HMAC', key, enc.encode(data));
-  return Array.from(new Uint8Array(sig))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
+  // Base64url encode (RFC 4648 §5) without padding
+  const bytes = new Uint8Array(sig);
+  let binary = '';
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }

@@ -21,7 +21,7 @@ export function verifyProvidersSig(
   }
 
   const data = `providers=${providers}&redirect=${redirect}`;
-  const expected = createHmac('sha256', secret).update(data).digest('hex');
+  const expected = createHmac('sha256', secret).update(data).digest('base64url');
 
   // Timing-safe comparison to prevent timing attacks
   const sigBuf = Buffer.from(signature, 'utf8');
