@@ -22,6 +22,18 @@ export async function handler(
 
   try {
     const config = getConfig();
+
+    // Enforce server-side provider restriction.
+    // Even if GOOGLE_CLIENT_ID is configured, reject requests
+    // unless 'google' is explicitly listed in ALLOWED_PROVIDERS.
+    if (!config.allowedProviders.includes('google')) {
+      console.log(JSON.stringify({
+        action: 'google_verify_denied',
+        reason: 'provider_not_allowed',
+      }));
+      return errorResponse('PROVIDER_NOT_ALLOWED', 'Google login is not allowed', 403);
+    }
+
     const googleClientId = config.googleClientId;
 
     if (!googleClientId) {

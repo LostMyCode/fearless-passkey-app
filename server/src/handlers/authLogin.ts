@@ -7,18 +7,17 @@ import { handleError } from '../lib/responses';
  * GET /auth/login?redirect=<callback_url>&destination=<path>&providers=<comma-separated>
  */
 export async function handler(
-  event: APIGatewayProxyEvent
+  _event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> {
 
   try {
     const config = getConfig();
     const title = config.loginPageTitle;
 
-    // Parse allowed federated providers from query string
-    const queryParams = event.queryStringParameters || {};
-    const providersParam = queryParams.providers || '';
-    const allowedProviders = providersParam ? providersParam.split(',').map(p => p.trim()) : [];
-    const showGoogle = allowedProviders.includes('google') && !!config.googleClientId;
+    // Determine allowed providers from server-side config (not query params)
+    // The ALLOWED_PROVIDERS env var is the source of truth to prevent
+    // users from bypassing gateway restrictions via query parameter tampering.
+    const showGoogle = config.allowedProviders.includes('google') && !!config.googleClientId;
     const googleClientId = config.googleClientId;
 
     const html = `<!DOCTYPE html>

@@ -19,6 +19,7 @@ Globals:
         LOGIN_PAGE_TITLE: !Ref LoginPageTitle
         FEDERATED_ACCOUNTS_TABLE: !Ref FederatedAccountsTable
         GOOGLE_CLIENT_ID: !Ref GoogleClientId
+        ALLOWED_PROVIDERS: !Ref AllowedProviders
 
 Parameters:
   RpId:
@@ -51,6 +52,10 @@ Parameters:
     Type: String
     Default: ''
     Description: Google OAuth 2.0 Client ID for federated login (leave empty to disable)
+  AllowedProviders:
+    Type: String
+    Default: ''
+    Description: Comma-separated list of allowed federated providers (e.g. "google"). Controls which providers are permitted server-side.
 
 Resources:
   # DynamoDB Tables
